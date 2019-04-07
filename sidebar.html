@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+
+    <style>
+    .branding-below {
+      bottom: 56px;
+      top: 0;
+    }
+    .branding-text {
+      left: 7px;
+      position: relative;
+      top: 3px;
+    }
+    .col-contain {
+      overflow: hidden;
+    }
+    .col-one {
+      float: left;
+      width: 50%;
+    }
+    .logo {
+      vertical-align: middle;
+    }
+    .radio-spacer {
+      height: 20px;
+    }
+    .width-100 {
+      width: 100%;
+    }
+    .button-block {
+      text-align: right;
+    }
+    .hide {
+      display: none;
+    }
+    .subtitle {
+      color: #888888;
+      font-size: 0.8rem;
+    }
+    .subtitle, 
+    .disable-text-select {
+      user-select: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    .input-holder {
+      margin-bottom: 10px;
+    }
+    
+    .input-text, 
+    .input-text:focus,
+    .textarea-text,
+    .textarea-text:focus {
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      box-sizing: border-box;
+      color: #3c4043;
+      font-size: 14px;
+      line-height: 20px;
+      padding: 7px 8px;
+      width: 100%;
+    }
+    
+    .input-text {
+      max-height: 36px;
+      min-height: 36px;
+    }
+    
+    .input-text:focus,
+    .textarea-text:focus {
+      border: 2px solid #3498db;
+      outline: none;
+    }
+    
+    /* Loader taken from https://www.w3schools.com/howto/howto_css_loader.asp */
+    .loader {
+      border: 16px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 16px solid #3498db;
+      width: 60px;
+      height: 60px;
+      -webkit-animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite;
+      margin: 0 auto;
+     }
+
+    @-webkit-keyframes spin {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar branding-below">
+      <div class="email-step-form loader" id="loader">
+      </div>
+    
+      <div class="email-step-form" id="varInfoTemplate">
+        <div class="block col-contain">
+          <div>
+            <label for="templateCharInput"><b>Chosen Character (1 Character)</b></label>
+            <input id="templateCharInput" class="input-text" maxlength="1">
+            <p class="subtitle">if "%" is chosen, "%TEXT%" will be recognised as valid template words<br><br>Only capital letters and underscore are detected</p>
+          </div>
+        </div>
+        <div class="block button-block">
+          <button id="varInfoTemplateNext">Next</button>
+        </div>
+      </div>
+      
+      <div class="email-step-form" id="bodyVarsTemplate">
+        <div class="block col-contain" id="bodyVarsTemplateCanvas">
+        </div>
+        <div class="block button-block">
+          <button id="bodyVarsTemplateBack">Back</button>
+          <button id="bodyVarsTemplatePreview">Preview</button>
+          <button id="bodyVarsTemplateNext">Next</button>
+        </div>
+      </div>
+      
+      <div class="email-step-form" id="sendEmailTemplate">
+        <div class="block col-contain">
+          <div class="input-holder">
+            <label for="emailTo"><b>TO:</b></label>
+            <textarea id="emailTo" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailCc"><b>CC:</b></label>
+            <textarea id="emailCc" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailBcc"><b>BCC:</b></label>
+            <textarea id="emailBcc" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailSubject"><b>Subject:</b></label>
+            <textarea id="emailSubject" class="textarea-text"></textarea>
+          </div>
+        </div>
+        <div class="block button-block">
+          <button id="sendEmailTemplateBack">Back</button>
+          <button id="sendEmailTemplateNext" class="blue">Send Email</button>
+        </div>
+      </div>
+    </div>
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+      const TEMPLATE_CHAR_KEY = '#templateCharInput';
+      var emailStepForms = {};
+    
+      $(function() {
+        // Get all form references in "emailStepForms"
+        // This var is used for various helpers
+        $('div.email-step-form').each(function(_, elem) {
+          var $elem = $(elem);
+          var id = $(elem).attr('id');
+          emailStepForms[id] = $elem;
+        });
+        
+        // Show Phase 1 form
+        initVarInfoTemplate();
+        
+        // Register Phase 1 buttons
+        $('#varInfoTemplateNext').click(initBodyVarsTemplate);
+        
+        // Register Phase 2 buttons
+        $('#bodyVarsTemplateBack').click(initVarInfoTemplate);
+        $('#bodyVarsTemplatePreview').click(showEmailPreview);
+        $('#bodyVarsTemplateNext').click(initSendEmailTemplate);
+        
+        // Register Phase 3 buttons
+        $('#sendEmailTemplateBack').click(initBodyVarsTemplate);
+        $('#sendEmailTemplateNext').click(sendEmail);
+      });
+      
+      function showFormStepWith(id) {
+        Object.keys(emailStepForms).forEach(function(keyId){
+          var $elem = emailStepForms[keyId];
+          
+          if (id === keyId) {
+            $elem.removeClass('hide');
+          } else {
+            $elem.addClass('hide');
+          }
+        });
+      }
+      
+      function initVarInfoTemplate() {
+        showFormStepWith('loader');
+        
+        getFromCachePromise([TEMPLATE_CHAR_KEY])
+        .then(function(val){
+          if (val && val[TEMPLATE_CHAR_KEY]) {
+            $(TEMPLATE_CHAR_KEY).val(val[TEMPLATE_CHAR_KEY]);
+          }
+          showFormStepWith('varInfoTemplate');
+        })
+        .catch(function(){
+          showFormStepWith('varInfoTemplate');
+        });       
+      }
+      
+      function initBodyVarsTemplate() {
+        var templateChar = $(TEMPLATE_CHAR_KEY).val();
+        if (!validateSingleChar(templateChar)) {
+          google.script.run.alert('Need exactly one character for templating to work!');
+          return;
+        }
+
+        showFormStepWith('loader');
+        google.script.run.putToCache(TEMPLATE_CHAR_KEY, templateChar);
+        google.script.run
+        .withSuccessHandler(function(matches) {
+          initDynamicMatchFields(matches).then(function() {
+            showFormStepWith('bodyVarsTemplate');
+          });
+        })
+        .withFailureHandler(function(e) {
+          showFormStepWith('bodyVarsTemplate');
+        })
+        .getTemplateVars(templateChar);
+      }
+      
+      function initDynamicMatchFields(matches) {
+        var $elem = $('#bodyVarsTemplateCanvas');
+        $elem.empty();
+        
+        var cacheKeyList = [];
+      
+        Object.keys(matches).forEach(function(key) {
+          cacheKeyList.push('dynamic-' + key);
+        });
+      
+        var relayInitFields = function(cache) {
+          Object.keys(matches).forEach(function(key) {
+            var occurrences = matches[key];
+            var id = 'dynamic-' + key;
+            var holder = document.createElement('div');
+            var label = document.createElement('label');
+            var input = document.createElement('input');
+          
+            holder.setAttribute('class', 'input-holder');
+            label.setAttribute('for', id);
+            label.innerHTML = '<b>' + key + ' ( ' + occurrences +' ):</b>';
+            input.setAttribute('id', id);
+            input.setAttribute('name', key);
+            input.setAttribute('class', 'input-text');
+            input.value = cache[id];
+          
+            holder.appendChild(label);
+            holder.appendChild(input);        
+            $elem.append(holder);
+          });
+        }
+      
+        return getFromCachePromise(cacheKeyList).then(function(cache){
+          relayInitFields(cache);
+        });
+      }
+      
+      function getMatchedChanges() {
+        var changes = [];
+        var $canvasInputs = $('#bodyVarsTemplateCanvas input');
+      
+        $canvasInputs.each(function(_, elem) {
+          var $elem = $(elem);
+          var key = $(elem).attr('name');
+          var value = $(elem).val();
+          
+          changes.push({ key: key, value: value });
+        });
+        
+        return changes;
+      }
+      
+      function getChangesObjForCache() {
+        var changes = {};
+        var $canvasInputs = $('#bodyVarsTemplateCanvas input');
+      
+        $canvasInputs.each(function(_, elem) {
+          var $elem = $(elem);
+          var key = $(elem).attr('id');
+          var value = $(elem).val();
+          
+          changes[key] = value;
+        });
+        
+        return changes;
+      }
+      
+      function validateMatchedChanges(changes) {
+        return changes.every(function(change) {
+          return !!change.key && !!change.value;
+        })
+      }
+      
+      function initSendEmailTemplate() {
+        var changes = getMatchedChanges();
+        if (!validateMatchedChanges(changes)) {
+          google.script.run.alert('All values must be filled up!');
+          return;
+        }
+        
+        var changeObj = getChangesObjForCache();
+        showFormStepWith('loader');
+        
+        var relayToEmailTemplate = function() {        
+          getFromCachePromise([
+            '#emailTo', '#emailCc', '#emailBcc', '#emailSubject',
+          ])
+          .then(function(val){
+            if (val) {
+              $('#emailTo').val(val['#emailTo']);
+              $('#emailCc').val(val['#emailCc']);
+              $('#emailBcc').val(val['#emailBcc']);
+              $('#emailSubject').val(val['#emailSubject']);
+            }
+            showFormStepWith('sendEmailTemplate');
+          })
+          .catch(function(){
+            showFormStepWith('sendEmailTemplate');
+          });
+        }
+        
+        putToCachePromise(changeObj)
+        .then(relayToEmailTemplate)
+        .catch(relayToEmailTemplate);
+      }
+      
+      function showEmailPreview() {
+        $elem = $(this);
+        $elem.html('Hold on...');
+        $elem.attr('disabled', 'disabled');
+        
+        google.script.run
+        .withSuccessHandler(function() {
+          $elem.html('Preview')
+          $elem.removeAttr('disabled');
+        })
+        .withFailureHandler(function() {
+          $elem.html('Preview')
+          $elem.removeAttr('disabled');
+        })
+        .previewCurrentEmail(getMatchedChanges());
+      }
+      
+      function sendEmail() {
+        var toEmails = $('#emailTo').val();
+        var ccEmails = $('#emailCc').val();
+        var bccEmails = $('#emailBcc').val();
+        var subject = $('#emailSubject').val();
+        
+        if (!validateNonEmptyString(toEmails)) {
+          google.script.run.alert('Need to provide emails to send to!');
+          return;
+        } else if (!validateNonEmptyString(subject)) {
+          google.script.run.alert('Need to provide a subject for email!');
+          return;
+        }
+        
+        $elem = $(this);
+        var relayToEmail = function() {        
+          $elem.html('Hold on...');
+          $elem.attr('disabled', 'disabled');
+        
+          google.script.run
+          .withSuccessHandler(function() {
+            $elem.html('Send Email');
+            $elem.removeAttr('disabled');
+          })
+          .withFailureHandler(function() {
+            $elem.html('Send Email');
+            $elem.removeAttr('disabled');
+          })
+          .sendEmail({
+            to: toEmails,
+            cc: ccEmails,
+            bcc: bccEmails,
+            subject: subject,
+          }, getMatchedChanges());
+        };
+        
+        putToCachePromise({
+          '#emailTo': toEmails,
+          '#emailCc': ccEmails,
+          '#emailBcc': bccEmails,
+          '#emailSubject': subject
+        }).then(relayToEmail).catch(relayToEmail);
+      }
+      
+      function validateSingleChar(s){
+        return typeof s === 'string' && s.length === 1;
+      }
+      
+      function validateNonEmptyString(s){
+        return typeof s === 'string' && s.length > 0;
+      }
+      
+      function getFromCachePromise(keyList){
+        return new Promise(function(resolve, reject){
+          google.script.run
+          .withSuccessHandler(function(cacheVal) {
+            resolve(cacheVal);
+          })
+          .withFailureHandler(function() {
+            reject();
+          })
+          .listFromCache(keyList);
+        });
+      }
+      
+      function putToCachePromise(keyObj){
+        return new Promise(function(resolve, reject){
+          google.script.run
+          .withSuccessHandler(function() {
+            resolve();
+          })
+          .withFailureHandler(function() {
+            reject();
+          })
+          .batchToCache(keyObj);
+        });
+      }
+    </script>
+  </body>
+</html>
