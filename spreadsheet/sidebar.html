@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <?!= include('STYLESHEET'); ?>
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+  </head>
+  <body>
+    <div class="sidebar branding-below">
+      <!-- Loader -->
+      <div id="loader" class='email-step-form'></div>
+     
+      
+      <!-- Screen 0: Allow user to choose a template file from a list of docs present in the same folder -->
+      <div class='email-step-form' id='templates'>
+        <!-- list of available templates -->
+        <div class="block col-contain">
+          <div>
+            <label for="listOfFiles"><b>Choose a template</b></label>
+            <select name="listOfFiles" id='listOfFiles'>
+            </select>
+          </div>
+        </div>
+        
+        <!-- delimiter -->
+        <div class="block col-contain">
+          <div>
+            <label for="templateCharInput"><b>Chosen Character (1 Character)</b></label>
+            <input id="templateCharInput" class="input-text" maxlength="1">
+            <p class="subtitle">if "%" is chosen, "%TEXT%" will be recognised as valid template words<br><br>Only capital letters and underscore are detected</p>
+          </div>
+        </div>
+        <div class="block button-block">
+          <button id="templatesNext">Next</button>
+        </div>
+      </div>
+      
+      <div class="email-step-form" id="settings">
+        <!-- Data -->
+        <div class="block col-contain" id="bodyVarsTemplateCanvas"></div>
+        
+        <!-- Email settings -->
+        <div class="block col-contain">
+          <div class="input-holder">
+            <label for="emailTo"><b>TO:</b></label>
+            <textarea id="emailTo" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailCc"><b>CC:</b></label>
+            <textarea id="emailCc" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailBcc"><b>BCC:</b></label>
+            <textarea id="emailBcc" class="textarea-text" rows="2"></textarea>
+          </div>
+          <div class="input-holder">
+            <label for="emailSubject"><b>Subject:</b></label>
+            <textarea id="emailSubject" class="textarea-text"></textarea>
+          </div>
+        </div>
+        
+        <!-- buttons -->
+        <div class="block button-block">
+          <button id="settingsBack">Back</button>
+          <!-- <button id="settingsPreview">Preview</button> -->
+          <!-- <button id="settingsSend" class="blue">Send Email</button> -->
+          <button id="settingsBatchSend" class="blue">Batch Send</button>
+        </div>
+      </div>
+      
+      
+
+    <!-- https://developers.google.com/apps-script/guides/html/best-practices#separate_html_css_and_javascript -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <?!= include('JAVASCRIPT'); ?>
+  </body>
+</html>

@@ -1,0 +1,299 @@
+<script>
+    const TEMPLATE_CHAR_KEY = '#templateCharInput';
+    const TEMPLATE_FILE_LIST = '#listOfFiles';
+    var emailStepForms = {};
+  
+    $(function() {
+      // Get all form references in "emailStepForms"
+      // This var is used for various helpers
+      $('div.email-step-form').each(function(_, elem) {
+        var $elem = $(elem);
+        var id = $(elem).attr('id');
+        emailStepForms[id] = $elem;
+      });
+      
+      // Register `next` button on template screen
+      $('#templatesNext').click(initSettings)
+      
+      // Register `prev` button on settings screen
+      $('#settingsBack').click(initTemplates);
+      // $('#settingsPreview').click(showEmailPreview);
+      // $('#settingsSend').click(initSendEmailTemplate);
+      // $('#settingsBatchSend').click(batchSend)
+      
+              
+      // Show template screen
+      initTemplates();
+    });
+   
+    /// displays section of the stepper
+    function showFormStepWith(id) {
+      Object.keys(emailStepForms).forEach(function(keyId){
+        var $elem = emailStepForms[keyId];
+        
+        if (id === keyId) {
+          $elem.removeClass('hide');
+        } else {
+          $elem.addClass('hide');
+        }
+      });
+    }
+
+    
+    // displays first screen with list of templates
+    function initTemplates() {  
+       showFormStepWith('loader');
+       google.script.run.withSuccessHandler(addTemplatesToList)
+        .getFilesInCurrentFolder();
+      
+       getFromCachePromise([TEMPLATE_CHAR_KEY])
+         .then(function(val){
+           if (val && val[TEMPLATE_CHAR_KEY]) {
+           $(TEMPLATE_CHAR_KEY).val(val[TEMPLATE_CHAR_KEY]);
+          }
+          showFormStepWith('varInfoTemplate');
+       })
+       .catch(function(){
+           // showFormStepWith('varInfoTemplate');
+           console.log('something went wrong in initTemplates')
+       });  
+    }
+   
+    function addTemplatesToList(listOfFiles) {
+      listOfFiles.forEach(file => {
+         $('#listOfFiles').append($('<option>', {
+            value: file.id,
+            text: file.name
+         })); 
+      })
+      
+      showFormStepWith('templates');
+    }
+    
+    // displays second screen
+    // by populating the template with spreadsheet values
+    function initSettings() {
+      initBodyVarsTemplate();
+      showFormStepWith('settings');    
+    }
+           
+    // screen 2: extract body vars
+    function initBodyVarsTemplate() {
+      var templateChar = $(TEMPLATE_CHAR_KEY).val();
+      var fileId = $(TEMPLATE_FILE_LIST).val();
+      
+      if (!validateSingleChar(templateChar)) {
+        google.script.run.alert('Need exactly one character for templating to work!');
+        return;
+      }
+
+      showFormStepWith('loader');
+      google.script.run.putToCache(TEMPLATE_CHAR_KEY, templateChar); 
+      
+      google.script.run
+      .withSuccessHandler(function(matches) {
+        initDynamicMatchFields(matches).then(function() {
+          showFormStepWith('settings');
+        });
+      })
+      .withFailureHandler(function(e) {
+        console.log(e)
+        showFormStepWith('settings');
+      })
+      .getTemplateVars(templateChar, fileId);
+    }
+    
+    
+    // screen 3: render values foundin file
+    function initDynamicMatchFields(matches) {
+      var $elem = $('#bodyVarsTemplateCanvas');
+      $elem.empty();
+      
+      var cacheKeyList = [];
+      Object.keys(matches).forEach(function(key) {
+        cacheKeyList.push('dynamic-' + key);
+      });
+    
+      var relayInitFields = function(cache) {
+        Object.keys(matches).forEach(function(key) {
+          var occurrences = matches[key];
+          var id = 'dynamic-' + key;
+          var holder = document.createElement('div');
+          var label = document.createElement('label');
+          var input = document.createElement('input');
+        
+          holder.setAttribute('class', 'input-holder');
+          label.setAttribute('for', id);
+          label.innerHTML = '<b>' + key + ' ( ' + occurrences +' ):</b>';
+          input.setAttribute('id', id);
+          input.setAttribute('name', key);
+          input.setAttribute('class', 'input-text');
+          input.value = cache[id];
+        
+          holder.appendChild(label);
+          holder.appendChild(input);        
+          $elem.append(holder);
+        });
+      }
+    
+      return getFromCachePromise(cacheKeyList).then(function(cache){
+        relayInitFields(cache);
+      });
+    }
+    
+    function getMatchedChanges() {
+      var changes = [];
+      var $canvasInputs = $('#bodyVarsTemplateCanvas input');
+    
+      $canvasInputs.each(function(_, elem) {
+        var $elem = $(elem);
+        var key = $(elem).attr('name');
+        var value = $(elem).val();
+        
+        changes.push({ key: key, value: value });
+      });
+      
+      return changes;
+    }
+    
+    function getChangesObjForCache() {
+      var changes = {};
+      var $canvasInputs = $('#bodyVarsTemplateCanvas input');
+    
+      $canvasInputs.each(function(_, elem) {
+        var $elem = $(elem);
+        var key = $(elem).attr('id');
+        var value = $(elem).val();
+        
+        changes[key] = value;
+      });
+      
+      return changes;
+    }
+    
+    function validateMatchedChanges(changes) {
+      return changes.every(function(change) {
+        return !!change.key && !!change.value;
+      })
+    }
+    
+    function initSendEmailTemplate() {
+      var changes = getMatchedChanges();
+      if (!validateMatchedChanges(changes)) {
+        google.script.run.alert('All values must be filled up!');
+        return;
+      }
+      
+      var changeObj = getChangesObjForCache();
+      showFormStepWith('loader');
+      
+      var relayToEmailTemplate = function() {        
+        getFromCachePromise([
+          '#emailTo', '#emailCc', '#emailBcc', '#emailSubject',
+        ])
+        .then(function(val){
+          if (val) {
+            $('#emailTo').val(val['#emailTo']);
+            $('#emailCc').val(val['#emailCc']);
+            $('#emailBcc').val(val['#emailBcc']);
+            $('#emailSubject').val(val['#emailSubject']);
+          }
+          showFormStepWith('sendEmailTemplate');
+        })
+        .catch(function(){
+          showFormStepWith('sendEmailTemplate');
+        });
+      }
+      
+      putToCachePromise(changeObj)
+      .then(relayToEmailTemplate)
+      .catch(relayToEmailTemplate);
+    }
+    
+    // email preview
+    function showEmailPreview() {
+      var fileId = $(TEMPLATE_FILE_LIST).val();
+      google.script.run
+      .previewCurrentEmail(getMatchedChanges(),fileId);
+    }
+    
+    
+    // send email
+    function sendEmail() {
+      var toEmails = $('#emailTo').val();
+      var ccEmails = $('#emailCc').val();
+      var bccEmails = $('#emailBcc').val();
+      var subject = $('#emailSubject').val();
+      
+      if (!validateNonEmptyString(toEmails)) {
+        google.script.run.alert('Need to provide emails to send to!');
+        return;
+      } else if (!validateNonEmptyString(subject)) {
+        google.script.run.alert('Need to provide a subject for email!');
+        return;
+      }
+      
+      $elem = $(this);
+      var relayToEmail = function() {        
+        $elem.html('Hold on...');
+        $elem.attr('disabled', 'disabled');
+      
+        google.script.run
+        .withSuccessHandler(function() {
+          $elem.html('Send Email');
+          $elem.removeAttr('disabled');
+        })
+        .withFailureHandler(function() {
+          $elem.html('Send Email');
+          $elem.removeAttr('disabled');
+        })
+        .sendEmail({
+          to: toEmails,
+          cc: ccEmails,
+          bcc: bccEmails,
+          subject: subject,
+        }, getMatchedChanges());
+      };
+      
+      putToCachePromise({
+        '#emailTo': toEmails,
+        '#emailCc': ccEmails,
+        '#emailBcc': bccEmails,
+        '#emailSubject': subject
+      }).then(relayToEmail).catch(relayToEmail);
+    }
+    
+    function validateSingleChar(s){
+      return typeof s === 'string' && s.length === 1;
+    }
+    
+    function validateNonEmptyString(s){
+      return typeof s === 'string' && s.length > 0;
+    }
+    
+    function getFromCachePromise(keyList){
+      return new Promise(function(resolve, reject){
+        google.script.run
+        .withSuccessHandler(function(cacheVal) {
+          resolve(cacheVal);
+        })
+        .withFailureHandler(function() {
+          reject();
+        })
+        .listFromCache(keyList);
+      });
+    }
+    
+    function putToCachePromise(keyObj){
+      return new Promise(function(resolve, reject){
+        google.script.run
+        .withSuccessHandler(function() {
+          resolve();
+        })
+        .withFailureHandler(function() {
+          reject();
+        })
+        .batchToCache(keyObj);
+      });
+    }
+  </script>
