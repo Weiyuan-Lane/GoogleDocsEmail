@@ -11,7 +11,6 @@
       <!-- Loader -->
       <div id="loader" class='email-step-form'></div>
      
-      
       <!-- Screen 0: Allow user to choose a template file from a list of docs present in the same folder -->
       <div class='email-step-form' id='templates'>
         <!-- list of available templates -->
@@ -36,16 +35,28 @@
         </div>
       </div>
       
-      <div class="email-step-form" id="settings">
+      <!-- screen 1 -->
+      <div class="email-step-form" id="settings">     
         <!-- Data -->
-        <div class="block col-contain" id="bodyVarsTemplateCanvas"></div>
-        
+        <div class="block col-contain" id="bodyVarsTemplateCanvas">
+           Fetching template
+        </div>
+
+        <div class="block button-block">
+          <button id="settingsBack">Back</button>
+          <button id="settingsNext">Next</button>
+        </div>
+      </div>
+      
+      <!-- screen 2 -->
+      <div class="email-step-form" id="emailSettings">     
+        <div class='block col-container'>
+           <h3>Sending <span id='email-count'>0</span> mails</h3>
+           <div id='emailContainer'></div> 
+        </div>
+       
         <!-- Email settings -->
         <div class="block col-contain">
-          <div class="input-holder">
-            <label for="emailTo"><b>TO:</b></label>
-            <textarea id="emailTo" class="textarea-text" rows="2"></textarea>
-          </div>
           <div class="input-holder">
             <label for="emailCc"><b>CC:</b></label>
             <textarea id="emailCc" class="textarea-text" rows="2"></textarea>
@@ -62,15 +73,12 @@
         
         <!-- buttons -->
         <div class="block button-block">
-          <button id="settingsBack">Back</button>
-          <!-- <button id="settingsPreview">Preview</button> -->
-          <!-- <button id="settingsSend" class="blue">Send Email</button> -->
-          <button id="settingsBatchSend" class="blue">Batch Send</button>
+          <button id="emailSettingsBack">Back</button>
+          <button id="previewEmail">Preview</button>
+          <button id="sendEmails" class="blue">Batch Send</button>
         </div>
       </div>
       
-      
-
     <!-- https://developers.google.com/apps-script/guides/html/best-practices#separate_html_css_and_javascript -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <?!= include('JAVASCRIPT'); ?>

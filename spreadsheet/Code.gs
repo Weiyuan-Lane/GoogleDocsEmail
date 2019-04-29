@@ -4,17 +4,20 @@
  * https://yagisanatode.com/2018/04/15/google-apps-script-how-to-create-javascript-and-css-files-for-a-sidebar-project-in-google-apps-script/
  */
 
-function sendEmail(emailPayload, changeset){
+function sendEmail(emailPayload, changeset, fileId){
+  console.log(emailPayload, changeset, fileId)
   var to = emailPayload['to'].replace(';', ',');
   var cc = emailPayload['cc'].replace(';', ',');
   var bcc = emailPayload['bcc'].replace(';', ',');
   
   MailApp.sendEmail(to, emailPayload['subject'], '', {
-    cc: cc,
-    bcc: bcc,
-    htmlBody: getDocAsHtmlFormat(changeset)
+   cc: cc,
+   bcc: bcc,
+   htmlBody: getDocAsHtmlFormat(changeset, fileId)
   });
+
   alert('Email has been sent!');
+  // return(getDocAsHtmlFormat(changeset, fileId))
 }
 
 /*
@@ -71,7 +74,6 @@ function getFile(fileId) {
 
 function getTemplateVars(s, fileId) {
   var bodyText = getFile(fileId)
-  console.log(bodyText)
   var regex = new RegExp(s + '[A-Z_]+' + s, "g");
   var matches = {};
   var key = null;
@@ -88,7 +90,7 @@ function getTemplateVars(s, fileId) {
 }
 
 function previewCurrentEmail(changeset, fileId) {
-  var ui = DocumentApp.getUi();
+  var ui = SpreadsheetApp.getUi();
   var html = getDocAsHtmlFormat(changeset, fileId);
   
   var htmlOutput = HtmlService
@@ -98,11 +100,33 @@ function previewCurrentEmail(changeset, fileId) {
   ui.showModalDialog(htmlOutput, 'Email Preview');
 }
 
+function getColumnHeaders() {
+  var sheet = SpreadsheetApp.getActive()
+  var headings = sheet.getDataRange()
+                    .offset(0, 0, 1)
+                    .getValues()[0];
+  return headings
+}
 
+function getColumnValues() {
+  var sheet = SpreadsheetApp.getActiveSheet()
+  var headers = getColumnHeaders();
+  var results = {};
+  for(var index in headers) {
+    var key = headers[index];
+    var rows = sheet.getDataRange().getValues()
+    var values = rows.slice(1).map(function(row) {
+      return row[index]
+    });
+    
+    results[key]  = values
+  }
+  return results
+}
 
 // UTILITY METHODS
 function alert(msg){
-  var ui = DocumentApp.getUi();
+  var ui = SpreadsheetApp.getUi();
   ui.alert(msg, ui.ButtonSet.OK);
 }
 
@@ -146,12 +170,10 @@ function getDocAsHtmlFormat(changeset, fileId) {
   
   html = UrlFetchApp.fetch(url, param).getContentText();
   // Swap values as and when required
-  changeset.forEach(function(change) {
-    if (change.key && change.value) {
-      var regex = new RegExp(change.key, 'g');
-      html = html.replace(regex, change.value); 
-    }
-  });
+  for(var key in changeset) {
+      var regex = new RegExp(key, 'g');
+      html = html.replace(regex, changeset[key]); 
+  }
   
   return html;
 }
