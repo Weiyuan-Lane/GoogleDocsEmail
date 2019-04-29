@@ -114,8 +114,8 @@ function getColumnValues() {
   var results = {};
   for(var index in headers) {
     var key = headers[index];
-    var rows = sheet.getDataRange().getValues()
-    var values = rows.slice(1).map(function(row) {
+    var rows = sheet.getActiveRange().getValues(); // sheet.getDataRange().getValues()
+    var values = rows.map(function(row) {
       return row[index]
     });
     

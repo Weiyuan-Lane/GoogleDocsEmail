@@ -7,12 +7,10 @@
     <!-- The CSS package above applies Google styling to buttons and other elements. -->
   </head>
   <body>
-    <div class="sidebar branding-below">
-      <!-- Loader -->
-      <div id="loader" class='email-step-form'></div>
-     
+    <div class="sidebar branding-below"> 
       <!-- Screen 0: Allow user to choose a template file from a list of docs present in the same folder -->
-      <div class='email-step-form' id='templates'>
+      <div class='email-step-form' id='templates'>        
+        
         <!-- list of available templates -->
         <div class="block col-contain">
           <div>
@@ -30,25 +28,22 @@
             <p class="subtitle">if "%" is chosen, "%TEXT%" will be recognised as valid template words<br><br>Only capital letters and underscore are detected</p>
           </div>
         </div>
-        <div class="block button-block">
-          <button id="templatesNext">Next</button>
+        
+        <hr />
+        <div class="block col-container">
+           <h3>Selected content</h3>
+           <p class="subtitle">Pick a range from the sheet</p>
+           <div class="block col-contain" id="bodyVarsTemplateCanvas">
+             ...
+           </div>
+           <div class="block button-block">
+            <button id="pickSpreadsheetData">Get content</button>
+            <button class='hide' id="templatesNext">Next</button>
+           </div>
         </div>
       </div>
-      
-      <!-- screen 1 -->
-      <div class="email-step-form" id="settings">     
-        <!-- Data -->
-        <div class="block col-contain" id="bodyVarsTemplateCanvas">
-           Fetching template
-        </div>
 
-        <div class="block button-block">
-          <button id="settingsBack">Back</button>
-          <button id="settingsNext">Next</button>
-        </div>
-      </div>
-      
-      <!-- screen 2 -->
+      <!-- screen 1: settings to send email -->
       <div class="email-step-form" id="emailSettings">     
         <div class='block col-container'>
            <h3>Sending <span id='email-count'>0</span> mails</h3>
