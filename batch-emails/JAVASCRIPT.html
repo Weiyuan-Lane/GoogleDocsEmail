@@ -108,14 +108,11 @@
     var $elem = $('#bodyVarsTemplateCanvas');
  
     $elem.html('Fetching data ... Please wait');
-    
-    var cacheKeyList = [];
-    Object.keys(matches).forEach(function(key) {
-      cacheKeyList.push('dynamic-' + key);
-    });
+    $elem.empty();
 
     google.script.run
       .withSuccessHandler(function(values) {
+        console.log('myvalues', values)
         emailValues = values
         var emailCount = 0
         var headers = Object.keys(values).filter((head) => ( head!== 'EMAIL' || head !== 'email' ))
@@ -126,14 +123,14 @@
         holder.innerHTML += '<br><br>Found in spreadsheet: <br>' + headers.join(", ");
         holder.innerHTML += '<br><br><br>Number of emails found: <br>' + emails.length;
         
-        $elem.empty();
         $elem.append(holder);
         $('#templatesNext').removeClass('hide')
       })
       .withFailureHandler(function(e) {
         var holder = document.createElement('div');
         holder.innerHTML = 'No emails found! Please add \`EMAIL\` as a columns'
-        $elem.append(holder);
+        $elem.append(holder)
+        $elem.append(e)
         console.log(e)
       })
       .getColumnValues();

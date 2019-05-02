@@ -112,15 +112,17 @@ function getColumnValues() {
   var sheet = SpreadsheetApp.getActiveSheet()
   var headers = getColumnHeaders();
   var results = {};
-  for(var index in headers) {
-    var key = headers[index];
-    var rows = sheet.getActiveRange().getValues(); // sheet.getDataRange().getValues()
-    var values = rows.map(function(row) {
-      return row[index]
-    });
-    
-    results[key]  = values
+  try {
+   for(var index in headers) {
+      var key = headers[index].toUpperCase();
+      var rows = sheet.getActiveRange().getValues()
+      var values = rows.map(function (row) { return row[index].toString() } )
+      results[key]  = values
+   } 
+  } catch(ex) {
+      throw Error('something went wrong! did you pick a range?')
   }
+
   return results
 }
 
