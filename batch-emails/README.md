@@ -1,6 +1,8 @@
 ## About
 
-Google Spreadsheet plug-in to batch email, using Google Docs templates
+Google Spreadsheet plug-in to batch email, using Google Docs templates. You can easily design your template using a Google Doc and use it to send batch emails
+
+![final_email](./assets/workflow.gif)
 
 
 ## How to install?
