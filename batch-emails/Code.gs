@@ -5,8 +5,7 @@
  */
 
 function sendEmail(emailPayload, changeset, fileId){
-  console.log(emailPayload, changeset, fileId)
-  var to = emailPayload['to'].replace(';', ',');
+  var to = emailPayload['to'];
   var cc = emailPayload['cc'].replace(';', ',');
   var bcc = emailPayload['bcc'].replace(';', ',');
   

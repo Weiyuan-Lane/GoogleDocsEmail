@@ -180,7 +180,7 @@
 
       var emails = emailValues['EMAIL']
       for(var index=0; index < emails.length; index ++) {
-        var email = emails[index]
+        var email = emails[index].toString()
         var matchedChanges = getMatchedChanges(index)
 
         google.script.run
