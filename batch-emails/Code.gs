@@ -9,10 +9,15 @@ function sendEmail(emailPayload, changeset, fileId){
   var cc = emailPayload['cc'].replace(';', ',');
   var bcc = emailPayload['bcc'].replace(';', ',');
   
+  const htmlBody = getDocAsHtmlFormat(changeset, fileId)
+  
+  // hotfix: for list styles
+  const cleanedHtml = htmlBody.replace(/list-style-type:none/g, '');
+  
   MailApp.sendEmail(to, emailPayload['subject'], '', {
    cc: cc,
    bcc: bcc,
-   htmlBody: getDocAsHtmlFormat(changeset, fileId)
+   htmlBody: cleanedHtml
   });
 
   alert('Email has been sent!');
