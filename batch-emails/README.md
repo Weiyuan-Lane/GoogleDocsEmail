@@ -24,10 +24,6 @@ Google Spreadsheet plug-in to batch email, using Google Docs templates. You can 
 - Add email details and click `Email Preview` to see a sample mail
 - Click `Batch Email` to send all emails! 
 
-<br />
-<br />
-<br />
+### Is this useful?
 
-#### Is this useful?
-<br />
 <a href="https://www.buymeacoffee.com/iamaatoh" target="_blank"><img height="45px" src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee"></a>
