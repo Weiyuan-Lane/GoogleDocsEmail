@@ -1,0 +1,242 @@
+<script>
+  const TEMPLATE_CHAR_KEY = '#templateCharInput';
+  const TEMPLATE_FILE_LIST = '#listOfFiles';
+  var emailStepForms = {};
+  var emailValues = {};
+
+  $(function() {
+    // Get all form references in "emailStepForms"
+    // This var is used for various helpers
+    $('div.email-step-form').each(function(_, elem) {
+      var $elem = $(elem);
+      var id = $(elem).attr('id');
+      emailStepForms[id] = $elem;
+    });
+    
+    // screen 0: register buttons
+    $('#pickSpreadsheetData').click(initBodyVarsTemplate)
+    $('#templatesNext').click(initEmailSettings)
+    
+    // screen 2: send email
+    $('#emailSettingsBack').click(initTemplates);
+    $('#previewEmail').click(showEmailPreview)
+    $('#sendEmails').click(sendEmail);
+
+    // Show template screen
+    initTemplates();
+  });
+ 
+  /// displays section of the stepper
+  function showFormStepWith(id) {
+    Object.keys(emailStepForms).forEach(function(keyId){
+      var $elem = emailStepForms[keyId];
+      
+      if (id === keyId) {
+        $elem.removeClass('hide');
+      } else {
+        $elem.addClass('hide');
+      }
+    });
+  }
+
+  
+  //
+  // screen 0 functions
+  //
+  
+  // fetch doc files in the same location as spreadsheet
+  function initTemplates() {  
+     google.script.run.withSuccessHandler(addTemplatesToList)
+      .getFilesInCurrentFolder();
+    
+     getFromCachePromise([TEMPLATE_CHAR_KEY])
+       .then(function(val) {
+         if (val && val[TEMPLATE_CHAR_KEY]) {
+         $(TEMPLATE_CHAR_KEY).val(val[TEMPLATE_CHAR_KEY]);
+        }
+        showFormStepWith('varInfoTemplate');
+     })
+     .catch(function(){
+         console.log('something went wrong in initTemplates')
+     });  
+  }
+ 
+  // populate list of docs / tempaltes
+  function addTemplatesToList(listOfFiles) {
+    listOfFiles.forEach(file => {
+       $('#listOfFiles').append($('<option>', {
+          value: file.id,
+          text: file.name
+       })); 
+    })
+    
+    showFormStepWith('templates');
+  }
+
+
+  //
+  // screen 1 functions
+  // 
+  function initEmailSettings() {
+    initSendEmailTemplate()
+    showFormStepWith('emailSettings');    
+  }
+         
+  // fetch data values from template and selected cells
+  function initBodyVarsTemplate() {
+    var templateChar = $(TEMPLATE_CHAR_KEY).val();
+    var fileId = $(TEMPLATE_FILE_LIST).val();
+    
+    if (!validateSingleChar(templateChar)) {
+      google.script.run.alert('Need exactly one character for templating to work!');
+      return;
+    }
+
+    google.script.run.putToCache(TEMPLATE_CHAR_KEY, templateChar); 
+    
+    google.script.run
+    .withSuccessHandler(function(matches) {
+      initDynamicMatchFields(matches)
+    })
+    .withFailureHandler(function(e) {
+      console.log(e)
+    })
+    .getTemplateVars(templateChar, fileId);
+  }
+  
+  function initDynamicMatchFields(matches) {
+    var $elem = $('#bodyVarsTemplateCanvas');
+ 
+    $elem.html('Fetching data ... Please wait');
+    $elem.empty();
+
+    google.script.run
+      .withSuccessHandler(function(values) {
+        console.log('myvalues', values)
+        emailValues = values
+        var emailCount = 0
+        var headers = Object.keys(values).filter((head) => ( head!== 'EMAIL' || head !== 'email' ))
+        var emails = values['EMAIL'] || values['email']
+        
+        var holder = document.createElement('div');
+        holder.innerHTML = 'Found in template: <br>'  + Object.keys(matches).join(", ");
+        holder.innerHTML += '<br><br>Found in spreadsheet: <br>' + headers.join(", ");
+        holder.innerHTML += '<br><br><br>Number of emails found: <br>' + emails.length;
+        
+        $elem.append(holder);
+        $('#templatesNext').removeClass('hide')
+      })
+      .withFailureHandler(function(e) {
+        var holder = document.createElement('div');
+        holder.innerHTML = 'No emails found! Please add \`EMAIL\` as a columns'
+        $elem.append(holder)
+        $elem.append(e)
+        console.log(e)
+      })
+      .getColumnValues();
+  }
+  
+  function getMatchedChanges(index) {
+    const values = Object.keys(emailValues)
+
+    const changes = {}
+    for(let key of values) {
+      const formattedKey = `%${key}%`
+      changes[formattedKey] = emailValues[key][index]
+    }
+    
+    return changes;
+  }
+  
+  function initSendEmailTemplate() {
+    var $eContainer = $('#emailContainer');
+    var val = emailValues['EMAIL'].map((email) => '<br>' + email).join('')
+    $eContainer.html(val);
+    var $eCount = $('#email-count')
+    $eCount.html(emailValues['EMAIL'].length);
+  }
+  
+  function showEmailPreview() {
+    var fileId = $(TEMPLATE_FILE_LIST).val();
+    google.script.run
+    .previewCurrentEmail(getMatchedChanges(0), fileId);
+  }
+  
+  function sendEmail() {
+    var fileId = $(TEMPLATE_FILE_LIST).val();
+    var ccEmails = $('#emailCc').val();
+    var bccEmails = $('#emailBcc').val();
+    var subject = $('#emailSubject').val();
+    
+    if (!validateNonEmptyString(subject)) {
+      google.script.run.alert('Need to provide a subject for email!');
+      return;
+    }
+    
+    $elem = $(this);
+    var relayToEmail = function() {        
+      $elem.html('Hold on...');
+      $elem.attr('disabled', 'disabled');
+
+      var emails = emailValues['EMAIL']
+      for(var index=0; index < emails.length; index ++) {
+        var email = emails[index].toString()
+        var matchedChanges = getMatchedChanges(index)
+
+        google.script.run
+        .withSuccessHandler(function(data) {
+           console.log('rec email', data)
+          $elem.html('Send Email');
+          $elem.removeAttr('disabled');
+        })
+        .withFailureHandler(function(data) {
+          console.log('something went wrong', data)
+          $elem.html('Send Email');
+          $elem.removeAttr('disabled');
+        })
+        .sendEmail({
+          to: email, // toEmails,
+          cc: ccEmails,
+          bcc: bccEmails,
+          subject: subject,
+        }, matchedChanges, fileId);
+      }
+    };
+    
+    relayToEmail()
+  }
+
+  function validateSingleChar(s){
+    return typeof s === 'string' && s.length === 1;
+  }
+  
+  function validateNonEmptyString(s){
+    return typeof s === 'string' && s.length > 0;
+  }
+  
+  function getFromCachePromise(keyList){
+    return new Promise(function(resolve, reject){
+      google.script.run
+      .withSuccessHandler(function(cacheVal) {
+        resolve(cacheVal);
+      })
+      .withFailureHandler(function() {
+        reject();
+      })
+      .listFromCache(keyList);
+    });
+  }
+  
+  function putToCachePromise(keyObj){
+    return new Promise(function(resolve, reject){
+      google.script.run
+      .withSuccessHandler(function() {
+        resolve();
+      })
+      .withFailureHandler(function() {
+        reject();
+      })
+      .batchToCache(keyObj);
+    });
+  }
+</script>
